@@ -1,0 +1,61 @@
+declare interface order {
+    orderID: bid2.Bid2;
+    invoiceNumber: number;
+    name: string;
+    active: boolean;
+    OrderStatus: {
+        orderStatusID: number;
+        name: string;
+    };
+    orderShippingOptions?: {
+        orderShippingOptionID: bid2.Bid2;
+        shippingOption?: {
+            shippingOptionID: bid2.Bid2;
+            fullName: string;
+            company: string;
+            email: string;
+            addressLine1: string;
+            addressLine2: string;
+            city: string;
+            state?: {
+                stateID: number;
+                name: string;
+                stateCode: string;
+            };
+            zip: string;
+            phone: string;
+            country?: {
+                countryID: number;
+                name: string;
+                countryCode2: string;
+                countryCode3: string;
+            };
+            taxExemptCertificateNumber: string;
+        };
+        orderShippingOptionShipments?: {
+            orderShippingOptionShipmentID: bid2.Bid2;
+            shipment: {
+                shipmentID: bid2.Bid2;
+                carrier: {
+                    carrierID: number;
+                    name: string;
+                    link: string;
+                };
+                shipmentType: {
+                    shipmentTypeID: number;
+                    name: string;
+                };
+                trackingNumber: string;
+                cost?: number;
+                shipped: boolean;
+                delivered: boolean;
+                returned: boolean;
+                exception: boolean;
+                shipmentPackages?: {
+                    shipmentPackageID: bid2.Bid2;
+                    trackingNumber: string;
+                }[];
+            };
+        }[];
+    }[];
+}
