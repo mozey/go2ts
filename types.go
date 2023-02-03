@@ -59,8 +59,9 @@ func ReadTypes(packagePath string) (s string, err error) {
 			switch x := n.(type) {
 			case *ast.Ident:
 				name = x.Name
-			// TODO Support array types
-			// case *ast.ArrayType:
+			case *ast.ArrayType:
+				// TODO Support array types
+				return false
 			case *ast.StructType:
 				var nodeBuf bytes.Buffer
 				// String representation of ast.Node

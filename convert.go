@@ -196,6 +196,9 @@ func main() {
 		switch x := n.(type) {
 		case *ast.Ident:
 			name = x.Name
+		case *ast.ArrayType:
+			// TODO
+			return false
 		case *ast.StructType:
 			if !first {
 				w.WriteString("\n\n")
