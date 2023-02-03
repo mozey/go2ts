@@ -2,6 +2,8 @@ declare interface Order {
     customer_name: string;
 }
 
+declare interface OrderSlice extends Array<Order>{}
+
 declare interface Orders {
     orders: OrderSlice;
 }
@@ -9,6 +11,8 @@ declare interface Orders {
 declare interface Product {
     title: string;
 }
+
+declare interface ProductSlice extends Array<Product>{}
 
 declare interface Products {
     products: ProductSlice;

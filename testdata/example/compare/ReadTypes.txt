@@ -3,6 +3,9 @@ type Order struct {
 	CustomerName string `json:"customer_name"`
 }
 
+// testdata/example/order.go#OrderSlice
+type OrderSlice []Order
+
 // testdata/example/order.go#Orders
 type Orders struct {
 	Orders OrderSlice `json:"orders"`
@@ -12,6 +15,9 @@ type Orders struct {
 type Product struct {
 	Title string `json:"title"`
 }
+
+// testdata/example/product.go#ProductSlice
+type ProductSlice []Product
 
 // testdata/example/product.go#Products
 type Products struct {
