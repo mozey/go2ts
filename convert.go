@@ -76,6 +76,7 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) {
 	default:
 		err := fmt.Errorf("unhandled: %s, %T", t, t)
 		fmt.Println(err)
+		// Return err instead of panic
 		panic(err)
 	}
 }
