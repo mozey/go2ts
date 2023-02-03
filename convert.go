@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/fatih/structtag"
+	"github.com/pkg/errors"
 )
 
 var Indent = "    "
@@ -27,13 +28,16 @@ func getIdent(s string) string {
 	return s
 }
 
-func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) {
+func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) error {
 	switch t := t.(type) {
 	case *ast.StarExpr:
 		if optionalParens {
 			s.WriteByte('(')
 		}
-		writeType(s, t.X, depth, false)
+		err := writeType(s, t.X, depth, false)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 		s.WriteString(" | undefined")
 		if optionalParens {
 			s.WriteByte(')')
@@ -43,7 +47,10 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) {
 			s.WriteString("string")
 			break
 		}
-		writeType(s, t.Elt, depth, true)
+		err := writeType(s, t.Elt, depth, true)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 		s.WriteString("[]")
 	case *ast.StructType:
 		s.WriteString("{\n")
@@ -67,18 +74,23 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) {
 		}
 	case *ast.MapType:
 		s.WriteString("{ [key: ")
-		writeType(s, t.Key, depth, false)
+		err := writeType(s, t.Key, depth, false)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 		s.WriteString("]: ")
-		writeType(s, t.Value, depth, false)
+		err = writeType(s, t.Value, depth, false)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 		s.WriteByte('}')
 	case *ast.InterfaceType:
 		s.WriteString("any")
 	default:
 		err := fmt.Errorf("unhandled: %s, %T", t, t)
-		fmt.Println(err)
-		// Return err instead of panic
-		panic(err)
+		return errors.WithStack(err)
 	}
+	return nil
 }
 
 var validJSNameRegexp = regexp.MustCompile(`(?m)^[\pL_][\pL\pN_]*$`)
@@ -87,7 +99,7 @@ func validJSName(n string) bool {
 	return validJSNameRegexp.MatchString(n)
 }
 
-func writeFields(s *strings.Builder, fields []*ast.Field, depth int) {
+func writeFields(s *strings.Builder, fields []*ast.Field, depth int) error {
 	for _, f := range fields {
 		optional := false
 
@@ -103,7 +115,7 @@ func writeFields(s *strings.Builder, fields []*ast.Field, depth int) {
 		if f.Tag != nil {
 			tags, err := structtag.Parse(f.Tag.Value[1 : len(f.Tag.Value)-1])
 			if err != nil {
-				panic(err)
+				return errors.WithStack(err)
 			}
 
 			jsonTag, err := tags.Get("json")
@@ -151,16 +163,17 @@ func writeFields(s *strings.Builder, fields []*ast.Field, depth int) {
 
 		s.WriteString(";\n")
 	}
+	return nil
 }
 
-func Convert(s string) string {
+func Convert(s string) (ts string, err error) {
 	s = strings.TrimSpace(s)
 	if len(s) == 0 {
-		return s
+		return s, nil
 	}
 
 	var f ast.Node
-	f, err := parser.ParseExprFrom(token.NewFileSet(), "editor.go", s, parser.SpuriousErrors)
+	f, err = parser.ParseExprFrom(token.NewFileSet(), "editor.go", s, parser.SpuriousErrors)
 	if err != nil {
 		s = fmt.Sprintf(`package main
 
@@ -170,7 +183,7 @@ func main() {
 
 		f, err = parser.ParseFile(token.NewFileSet(), "editor.go", s, parser.SpuriousErrors)
 		if err != nil {
-			panic(err)
+			return ts, errors.WithStack(err)
 		}
 	}
 
@@ -192,7 +205,7 @@ func main() {
 			w.WriteString(name)
 			w.WriteString(" {\n")
 
-			writeFields(w, x.Fields.List, 0)
+			err = writeFields(w, x.Fields.List, 0)
 
 			w.WriteByte('}')
 
@@ -204,5 +217,5 @@ func main() {
 		return true
 	})
 
-	return w.String()
+	return w.String(), nil
 }

@@ -21,7 +21,10 @@ func TestReadTypes(t *testing.T) {
 		t.Fatalf("Output does not match test data in %s", filePath)
 	}
 
-	out := Convert(s)
+	out, err := Convert(s)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	filePath = "testdata/example/compare/Convert.txt"
 	compareOut, err = os.ReadFile(filePath)
 	if err != nil {
