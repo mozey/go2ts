@@ -14,7 +14,10 @@ func TestConvert(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	out := Convert(string(in))
+	out, err := Convert(string(in))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if out != string(compareOut) {
 		t.Fatal("Output does not match test data")
 	}
