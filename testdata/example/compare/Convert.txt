@@ -1,0 +1,15 @@
+declare interface Order {
+    customer_name: string;
+}
+
+declare interface Orders {
+    orders: OrderSlice;
+}
+
+declare interface Product {
+    title: string;
+}
+
+declare interface Products {
+    products: ProductSlice;
+}
