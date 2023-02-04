@@ -30,7 +30,20 @@ func ReadTypes(packagePath string) (s string, err error) {
 		return s, errors.WithStack(err)
 	}
 
+	fileSet := token.NewFileSet()
 	var convertBuf bytes.Buffer
+	addNode := func(filePath, name string, n ast.Node) {
+		var nodeBuf bytes.Buffer
+		// String representation of ast.Node
+		// https://stackoverflow.com/a/52619499/639133
+		printer.Fprint(&nodeBuf, fileSet, n)
+		convertBuf.WriteString(
+			fmt.Sprintf("// %s#%s\n", filePath, name))
+		convertBuf.WriteString(fmt.Sprintf("type %s ", name))
+		convertBuf.Write(nodeBuf.Bytes())
+		convertBuf.WriteString("\n\n")
+	}
+
 	for _, file := range files {
 		// Read file
 		filePath := filepath.Join(packagePath, file.Name())
@@ -47,7 +60,6 @@ func ReadTypes(packagePath string) (s string, err error) {
 		}
 
 		// Parse
-		fileSet := token.NewFileSet()
 		f, err := parser.ParseFile(
 			fileSet, "editor.go", b, parser.SpuriousErrors)
 		if err != nil {
@@ -59,18 +71,11 @@ func ReadTypes(packagePath string) (s string, err error) {
 			switch x := n.(type) {
 			case *ast.Ident:
 				name = x.Name
-			// TODO Support array types
-			// case *ast.ArrayType:
+			case *ast.ArrayType:
+				addNode(filePath, name, n)
+				return false
 			case *ast.StructType:
-				var nodeBuf bytes.Buffer
-				// String representation of ast.Node
-				// https://stackoverflow.com/a/52619499/639133
-				printer.Fprint(&nodeBuf, fileSet, n)
-				convertBuf.WriteString(
-					fmt.Sprintf("// %s#%s\n", filePath, name))
-				convertBuf.WriteString(fmt.Sprintf("type %s ", name))
-				convertBuf.Write(nodeBuf.Bytes())
-				convertBuf.WriteString("\n\n")
+				addNode(filePath, name, n)
 				return false
 			}
 			return true

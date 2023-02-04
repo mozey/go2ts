@@ -4,9 +4,7 @@ type Order struct {
 }
 
 // testdata/example/order.go#Orders
-type Orders struct {
-	Orders OrderSlice `json:"orders"`
-}
+type Orders []Order
 
 // testdata/example/product.go#Product
 type Product struct {
@@ -14,7 +12,5 @@ type Product struct {
 }
 
 // testdata/example/product.go#Products
-type Products struct {
-	Products ProductSlice `json:"products"`
-}
+type Products []Product
 

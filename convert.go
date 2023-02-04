@@ -1,9 +1,11 @@
 package go2ts
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"regexp"
 	"strings"
@@ -13,6 +15,11 @@ import (
 )
 
 var Indent = "    "
+
+// TSTypePrefix to use when generating the TypeScript types.
+// See discussion re. "declare" vs "export"
+// https://stackoverflow.com/q/35019987/639133
+var TSTypePrefix = "declare"
 
 func getIdent(s string) string {
 	switch s {
@@ -172,8 +179,9 @@ func Convert(s string) (ts string, err error) {
 		return s, nil
 	}
 
+	fileSet := token.NewFileSet()
 	var f ast.Node
-	f, err = parser.ParseExprFrom(token.NewFileSet(), "editor.go", s, parser.SpuriousErrors)
+	f, err = parser.ParseExprFrom(fileSet, "editor.go", s, parser.SpuriousErrors)
 	if err != nil {
 		s = fmt.Sprintf(`package main
 
@@ -181,7 +189,7 @@ func main() {
 	%s
 }`, s)
 
-		f, err = parser.ParseFile(token.NewFileSet(), "editor.go", s, parser.SpuriousErrors)
+		f, err = parser.ParseFile(fileSet, "editor.go", s, parser.SpuriousErrors)
 		if err != nil {
 			return ts, errors.WithStack(err)
 		}
@@ -196,12 +204,34 @@ func main() {
 		switch x := n.(type) {
 		case *ast.Ident:
 			name = x.Name
+
+		// TODO If Go type declaration is preceded by comment lines,
+		// then preserve the comment in the TypeScript declaration.
+		// See examples in testdata/example/compare/ReadTypes.txt
+
+		case *ast.ArrayType:
+			if !first {
+				w.WriteString("\n\n")
+			}
+
+			w.WriteString(fmt.Sprintf("%s interface ", TSTypePrefix))
+			w.WriteString(name)
+			// How can I define an interface for an array of objects?
+			// https://stackoverflow.com/a/25470775/639133
+			w.WriteString(" extends Array<")
+			// TODO Use writeType instead of printer.Fprint
+			var nodeBuf bytes.Buffer
+			printer.Fprint(&nodeBuf, fileSet, n)
+			w.WriteString(strings.ReplaceAll(nodeBuf.String(), "[]", ""))
+			w.WriteString(">{}")
+			return false
+
 		case *ast.StructType:
 			if !first {
 				w.WriteString("\n\n")
 			}
 
-			w.WriteString("declare interface ")
+			w.WriteString(fmt.Sprintf("%s interface ", TSTypePrefix))
 			w.WriteString(name)
 			w.WriteString(" {\n")
 
@@ -211,9 +241,9 @@ func main() {
 
 			first = false
 
-			// TODO: allow multiple structs
 			return false
 		}
+
 		return true
 	})
 
