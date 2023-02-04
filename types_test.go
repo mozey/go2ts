@@ -21,11 +21,13 @@ func TestReadTypes(t *testing.T) {
 		t.Fatalf("Output does not match test data in %s", filePath)
 	}
 
+	Indent = "  "
+	TSTypePrefix = "export"
 	out, err := Convert(s)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	filePath = "testdata/example/compare/Convert.txt"
+	filePath = "testdata/example/compare/Convert.ts"
 	compareOut, err = os.ReadFile(filePath)
 	if err != nil {
 		t.Fatal(err.Error())

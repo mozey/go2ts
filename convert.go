@@ -16,6 +16,11 @@ import (
 
 var Indent = "    "
 
+// TSTypePrefix to use when generating the TypeScript types.
+// See discussion re. "declare" vs "export"
+// https://stackoverflow.com/q/35019987/639133
+var TSTypePrefix = "declare"
+
 func getIdent(s string) string {
 	switch s {
 	case "bool":
@@ -200,19 +205,23 @@ func main() {
 		case *ast.Ident:
 			name = x.Name
 
+		// TODO If Go type declaration is preceded by comment lines,
+		// then preserve the comment in the TypeScript declaration.
+		// See examples in testdata/example/compare/ReadTypes.txt
+
 		case *ast.ArrayType:
 			if !first {
 				w.WriteString("\n\n")
 			}
 
+			w.WriteString(fmt.Sprintf("%s interface ", TSTypePrefix))
+			w.WriteString(name)
 			// How can I define an interface for an array of objects?
 			// https://stackoverflow.com/a/25470775/639133
-			w.WriteString("declare interface ")
-			w.WriteString(name)
 			w.WriteString(" extends Array<")
+			// TODO Use writeType instead of printer.Fprint
 			var nodeBuf bytes.Buffer
 			printer.Fprint(&nodeBuf, fileSet, n)
-			// TODO Better way to do this instead of ReplaceAll?
 			w.WriteString(strings.ReplaceAll(nodeBuf.String(), "[]", ""))
 			w.WriteString(">{}")
 			return false
@@ -222,9 +231,7 @@ func main() {
 				w.WriteString("\n\n")
 			}
 
-			// See discussion re. export vs declare
-			// https://stackoverflow.com/q/35019987/639133
-			w.WriteString("declare interface ")
+			w.WriteString(fmt.Sprintf("%s interface ", TSTypePrefix))
 			w.WriteString(name)
 			w.WriteString(" {\n")
 
@@ -234,7 +241,6 @@ func main() {
 
 			first = false
 
-			// TODO: allow multiple structs
 			return false
 		}
 

@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "module": "AMD",
+        "noImplicitAny": true,
+        "removeComments": false,
+        "preserveConstEnums": true,
+        "outDir": "dist",
+        "outFile": "dist/app.js",
+        "sourceMap": true,
+        "incremental": true
+    },
+    "include": [
+        "**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.go"
+    ]
+}
