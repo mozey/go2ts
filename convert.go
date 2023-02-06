@@ -1,11 +1,9 @@
 package go2ts
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"regexp"
 	"strings"
@@ -173,6 +171,12 @@ func writeFields(s *strings.Builder, fields []*ast.Field, depth int) error {
 	return nil
 }
 
+const wrapper = `package main
+
+func main() {
+	%s
+}`
+
 func Convert(s string) (ts string, err error) {
 	s = strings.TrimSpace(s)
 	if len(s) == 0 {
@@ -183,11 +187,7 @@ func Convert(s string) (ts string, err error) {
 	var f ast.Node
 	f, err = parser.ParseExprFrom(fileSet, "editor.go", s, parser.SpuriousErrors)
 	if err != nil {
-		s = fmt.Sprintf(`package main
-
-func main() {
-	%s
-}`, s)
+		s = fmt.Sprintf(wrapper, s)
 
 		f, err = parser.ParseFile(fileSet, "editor.go", s, parser.SpuriousErrors)
 		if err != nil {
@@ -200,6 +200,7 @@ func main() {
 
 	first := true
 
+	var builderErr error
 	ast.Inspect(f, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.Ident:
@@ -219,10 +220,7 @@ func main() {
 			// How can I define an interface for an array of objects?
 			// https://stackoverflow.com/a/25470775/639133
 			w.WriteString(" extends Array<")
-			// TODO Use writeType instead of printer.Fprint
-			var nodeBuf bytes.Buffer
-			printer.Fprint(&nodeBuf, fileSet, n)
-			w.WriteString(strings.ReplaceAll(nodeBuf.String(), "[]", ""))
+			w.WriteString(fmt.Sprintf("%s", x.Elt))
 			w.WriteString(">{}")
 			return false
 
@@ -236,6 +234,10 @@ func main() {
 			w.WriteString(" {\n")
 
 			err = writeFields(w, x.Fields.List, 0)
+			if err != nil {
+				builderErr = err
+				return false
+			}
 
 			w.WriteByte('}')
 
@@ -246,6 +248,9 @@ func main() {
 
 		return true
 	})
+	if builderErr != nil {
+		return ts, builderErr
+	}
 
 	return w.String(), nil
 }
